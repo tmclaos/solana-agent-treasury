@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Tests: 57 Passed](https://img.shields.io/badge/Tests-57%20Passed-brightgreen.svg)](#test-coverage)
 
-Institutional-grade TypeScript backend infrastructure and CLI for autonomous AI agents and Telegram communities managing Solana treasuries. Integrates MultiHopper routing protocols, Telegram Bot interactive management, ElizaOS / LLM function calling plugin adapters, signed HMAC-SHA256 event webhooks, Parallel Multi-Vault Liquidity Splitting, Cryptographic Tamper-Evident Audit Chains (`AuditLogChain`), Webacy-grade risk intelligence (`RiskGuard`), SPL Token & USDC stablecoin routing, high-watermark multi-sig thresholds, Versioned Transactions (`v0`), Jito MEV front-running protection, multi-send transaction batching, sub-millisecond warm blockhash caching, dynamic adaptive priority fees, and velocity-based circuit breakers.
+TypeScript backend engine and CLI for Solana treasuries. Includes MultiHopper routing, Telegram bot controls, LLM tool definitions, HMAC-SHA256 webhooks, parallel multi-vault splitting, SHA-256 audit log chains, recipient risk screening, SPL token routing, multi-sig limits, v0 transactions with Jito tips, in-memory blockhash caching, adaptive priority fees, and velocity circuit breakers.
 
 ---
 
@@ -56,7 +56,7 @@ Institutional-grade TypeScript backend infrastructure and CLI for autonomous AI 
 
 ## Telegram Bot Interface (`SolanaTreasuryTelegramBot`)
 
-The treasury engine includes a complete, production-grade Telegram Bot interface designed for DAOs, trading alpha groups, and autonomous agent administrators. It supports both live Telegram Bot API long-polling/webhooks and headless CLI simulation.
+The engine includes a Telegram bot for DAOs and agent operators. It supports live Telegram Bot API polling, webhooks, and local CLI simulation.
 
 ### Available Commands
 | Command | Arguments | Description |
@@ -155,4 +155,4 @@ bun run tests/benchmark.ts
 
 ## License
 
-MIT © 2026 Leo Caldart (@Titration).
+MIT © 2026 Leo Caldart (@tmclaos).

@@ -1,7 +1,7 @@
 {
   "name": "solana-agent-treasury",
-  "version": "1.2.0",
-  "description": "Autonomous Agent Treasury Guard & Multi-Hop Route Engine",
+  "version": "1.0.0",
+  "description": "Autonomous Agent Treasury Guard & Multi-Hop Route Dispatcher for Solana",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
@@ -11,16 +11,16 @@
     "build": "tsc",
     "start": "node dist/cli.js",
     "test": "jest",
-    "demo": "node dist/cli.js demo",
-    "bench": "ts-node tests/benchmark.ts"
+    "lint": "tsc --noEmit"
   },
   "keywords": [
     "solana",
     "web3",
     "treasury",
+    "autonomous-agent",
     "multi-hop",
-    "jito",
-    "versioned-transactions"
+    "multi-send",
+    "routing"
   ],
   "author": "Leo Caldart <lcaldart050@gmail.com>",
   "license": "MIT",
@@ -29,5 +29,12 @@
     "commander": "^13.1.0",
     "dotenv": "^16.4.7",
     "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.13.9",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.6",
+    "typescript": "^5.8.2"
   }
 }

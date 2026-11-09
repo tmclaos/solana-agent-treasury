@@ -2,9 +2,9 @@
 
 [![CI](https://github.com/tmclaos/solana-agent-treasury/actions/workflows/ci.yml/badge.svg)](https://github.com/tmclaos/solana-agent-treasury/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Tests: 32 Passed](https://img.shields.io/badge/Tests-32%20Passed-brightgreen.svg)](#test-coverage)
+[![Tests: 38 Passed](https://img.shields.io/badge/Tests-38%20Passed-brightgreen.svg)](#test-coverage)
 
-Institutional-grade TypeScript backend infrastructure and CLI for autonomous AI agents managing Solana treasuries. Integrates MultiHopper routing protocols, Webacy-grade risk intelligence (`RiskGuard`), SPL Token & USDC stablecoin routing, high-watermark multi-sig thresholds, Versioned Transactions (`v0`), Jito MEV front-running protection, multi-send transaction batching, sub-millisecond warm blockhash caching, dynamic adaptive priority fees, and velocity-based circuit breakers.
+Institutional-grade TypeScript backend infrastructure and CLI for autonomous AI agents managing Solana treasuries. Integrates MultiHopper routing protocols, Parallel Multi-Vault Liquidity Splitting, Cryptographic Tamper-Evident Audit Chains (`AuditLogChain`), Webacy-grade risk intelligence (`RiskGuard`), SPL Token & USDC stablecoin routing, high-watermark multi-sig thresholds, Versioned Transactions (`v0`), Jito MEV front-running protection, multi-send transaction batching, sub-millisecond warm blockhash caching, dynamic adaptive priority fees, and velocity-based circuit breakers.
 
 ---
 
@@ -16,18 +16,19 @@ Institutional-grade TypeScript backend infrastructure and CLI for autonomous AI 
          │ (Requests Transfer / Batch Payout)
          ▼
 ┌─────────────────────────────────┐
-│           RiskGuard             │ ── Pre-flight drainer, phishing & risk score check (< 1.6 μs)
+│           RiskGuard             │ ── Pre-flight drainer, phishing & risk score check (< 0.6 μs)
 └────────────────┬────────────────┘
                  │ Verified Clean
                  ▼
 ┌─────────────────────────────────┐
 │         TreasuryGuard           │ ── Hard caps, 24h spend limit, multi-sig high-watermark & breaker
+│        AuditLogChain            │ ── Appends SHA-256 tamper-evident cryptographic log entry (< 2.8 μs)
 └────────────────┬────────────────┘
-                 │ Validated (< 1.9 μs)
+                 │ Validated (< 2.8 μs)
                  ▼
 ┌─────────────────────────────────┐
-│         MultiHopRouter          │ ── Computes vault paths & deducts 0.25% revenue share
-│        SplTokenManager          │ ── Native SOL & SPL TokenChecked (USDC/USDT) formatting
+│         MultiHopRouter          │ ── Computes vault paths, parallel splits & 0.25% revenue share (< 0.9 μs)
+│        SplTokenManager          │ ── Native SOL & SPL TokenChecked (USDC/USDT) formatting (< 0.5 μs)
 └────────────────┬────────────────┘
                  │ Route Built (< 4.0 μs)
                  ▼
@@ -54,11 +55,11 @@ Measured using hardware-accurate timestamps (`process.hrtime.bigint()`):
 ┌─ [ENGINE BENCHMARKS - 10,000 ITERATIONS] ──────────────────────────┐
 │ Operation                │ Avg (μs)   │ p95 (μs)   │ p99 (μs)     │
 ├──────────────────────────┼────────────┼────────────┼──────────────┤
-│ TreasuryGuard.validate   │       1.86 │       4.80 │        10.80 │
-│ MultiHopRouter.route     │       3.98 │       7.70 │        18.60 │
-│ MultiHopRouter.batch     │       6.37 │       9.40 │        24.50 │
-│ RiskGuard.evaluate       │       1.57 │       1.90 │         5.80 │
-│ SplToken.transferChecked │       1.13 │       2.10 │         6.00 │
+│ TreasuryGuard.validate   │       2.79 │       4.70 │        11.30 │
+│ MultiHopRouter.route     │       0.87 │       1.90 │         5.50 │
+│ MultiHopRouter.batch     │       2.01 │       3.70 │         8.00 │
+│ RiskGuard.evaluate       │       0.51 │       0.80 │         2.90 │
+│ SplToken.transferChecked │       0.48 │       1.50 │         2.30 │
 └──────────────────────────┴────────────┴────────────┴──────────────┘
 ```
 
@@ -71,55 +72,67 @@ Autonomous agents must not send treasury funds to malicious drainers, compromise
 * Evaluates recipient addresses against verified threat datasets before transactions touch the network.
 * Automatic drainer and phishing detection blocks transactions immediately.
 * Configurable risk score ceiling (0–100 scale).
-* High-speed in-memory caching ensures risk evaluations execute in **under 2.0 microseconds**.
+* High-speed in-memory caching ensures risk evaluations execute in **0.51 microseconds**.
 
-### 2. SPL Token & USDC Stablecoin Direct Support (`SplTokenManager`)
+### 2. Parallel Multi-Vault Liquidity Splitting
+Prevents single-vault liquidity bottlenecks and reduces on-chain trace footprints for large institutional transfers.
+* Decomposes large transfers across N parallel intermediate vaults using custom or equal basis-point weights.
+* Guaranteed zero-loss conservation: exact remainder handling ensures `sum(splits) === totalAmount`.
+* Automatic aggregation of protocol fees and partner revenue shares across all splits.
+
+### 3. Cryptographic Tamper-Evident Audit Chain (`AuditLogChain`)
+* Maintains a SHA-256 cryptographic hash chain (`prevHash + payload -> currentHash`) of every validation, approval, and dispatch.
+* Provides deterministic `verifyIntegrity()` method to detect history rewrite or record tampering.
+* Built-in to `TreasuryGuard` for compliance reporting.
+
+### 4. SPL Token & USDC Stablecoin Direct Support (`SplTokenManager`)
 Treasury operations require stablecoin payroll and supplier settlement alongside native SOL.
 * Native construction of `transferChecked` instructions verifying mint address and decimals on-chain.
 * Pre-configured mainnet mints: **USDC**, **USDT**, and **PYUSD**.
 * Deterministic offline Associated Token Address (ATA) derivation.
 * BigInt precision parser and formatter preventing fractional decimal truncation leaks.
 
-### 3. Dual-Signer High-Watermark Approvals
+### 5. Dual-Signer High-Watermark Approvals
 * Transfers below policy limits execute autonomously with zero operator friction.
 * Transfers exceeding high-watermark thresholds (e.g. >5 SOL or >$2,500 USDC) automatically trigger co-signing requirements.
 * Transactions remain staged until registered approvals meet quorum.
 
-### 4. Versioned Transactions (`v0`) & Address Lookup Tables (ALTs)
+### 6. Versioned Transactions (`v0`) & Address Lookup Tables (ALTs)
 Legacy Solana transactions are capped at 1,232 bytes (~20 accounts maximum).
 * Compiles atomic transfers into modern `VersionedTransaction` (`MessageV0`).
 * Integrates Address Lookup Tables (ALTs), compressing public keys from 32 bytes to 1-byte indices.
 * Expands batch payout capacity from **20 to 50+ recipients** within a single atomic packet.
 
-### 5. Jito MEV Atomic Bundle Protection
+### 7. Jito MEV Atomic Bundle Protection
 Prevents sandwich attacks, front-running, and predatory mempool searchers.
 * Programmatically constructs and appends dynamic tip instructions directed to verified Jito tip accounts (`96gYZGLn...`, `HFqU5x6...`).
 * Bypasses the public gossip network to execute atomically through Jito Block Engines.
 
-### 6. Sub-Millisecond Warm Blockhash Cache (`BlockhashCache`)
+### 8. Sub-Millisecond Warm Blockhash Cache (`BlockhashCache`)
 Eliminates the standard **150ms to 300ms** latency penalty of querying `getLatestBlockhash` on demand.
 * Background worker continuously refreshes and maintains a warm blockhash cache in RAM.
 * In-memory cache access executes in **under 0.005ms**.
 
-### 7. Adaptive Priority Fee Optimizer (`DynamicFeeEngine`)
+### 9. Adaptive Priority Fee Optimizer (`DynamicFeeEngine`)
 * Samples recent block prioritization fees using `getRecentPrioritizationFees`.
 * Dynamically calculates the **75th percentile micro-lamport fee**.
 * Enforces safety bounds (5,000 to 500,000 µLamports) with automatic fallback during RPC isolation.
 
-### 8. Velocity-Based Circuit Breakers
+### 10. Velocity-Based Circuit Breakers
 Protects against bot loops, runaway recursion, or automated exploit attempts.
 * Trips instantly if burst velocity exceeds 5 transactions within 3 seconds.
 * Imposes an enforced 30-second cooldown period, preventing wallet depletion.
 
 ---
 
-## Test Coverage (32 Tests Across 11 Suites)
+## Test Coverage (38 Tests Across 13 Suites)
 
 ```bash
 bun test
 ```
 
 ```text
+tests/audit.test.ts .............................. 3 passed
 tests/blockhash_cache.test.ts .................... 3 passed
 tests/circuit_breaker.test.ts .................... 4 passed
 tests/dispatcher.test.ts ......................... 2 passed
@@ -128,11 +141,12 @@ tests/jito.test.ts ............................... 2 passed
 tests/multisig.test.ts ........................... 3 passed
 tests/risk_guard.test.ts ......................... 4 passed
 tests/router.test.ts ............................. 3 passed
+tests/split_router.test.ts ....................... 3 passed
 tests/spl_token.test.ts .......................... 3 passed
 tests/treasury.test.ts ........................... 4 passed
 tests/v0.test.ts ................................. 1 passed
 
-Total: 32 pass, 0 fail (83ms)
+Total: 38 pass, 0 fail (149ms)
 ```
 
 ---

@@ -155,4 +155,4 @@ bun run tests/benchmark.ts
 
 ## License
 
-MIT © 2026 Leo Caldart (@tmclaos).
+MIT © 2026 @tmclaos.
